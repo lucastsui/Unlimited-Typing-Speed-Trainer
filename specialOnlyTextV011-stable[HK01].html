@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>提取HK01</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e5e7eb;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            margin: 0;
+        }
+        h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #98FF98;
+            margin-bottom: 1.5rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 42rem;
+        }
+        textarea {
+            background-color: #2d2d2d;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            width: 100%;
+            resize: vertical;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3);
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        button {
+            width: 100%;
+            background-color: #7c3aed;
+            color: white;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #6d28d9;
+        }
+        .circle-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        .circle-button:hover {
+            background-color: #0056b3;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        #saveTxtBtn {
+            background-color: #4CAF50;
+        }
+        #saveTxtBtn:hover {
+            background-color: #3e8e41;
+        }
+    </style>
+</head>
+<body>
+    <h1>提取HK01</h1>
+    <div class="button-container">
+        <a href="https://www.hk01.com/channel/6/%E7%AA%81%E7%99%BC" target="_blank" class="circle-button">HK01突發</a>
+    </div>
+    <div class="container">
+        <textarea id="inputText" rows="6" placeholder="請輸入包含HTML標籤的文字..."></textarea>
+        
+        <div class="checkbox-group">
+            <div class="checkbox-option">
+                <input type="checkbox" id="rangeType1" name="rangeType" value="5" checked>
+                <label for="rangeType1">標題</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="rangeType1" name="rangeType" value="1" checked>
+                <label for="rangeType1">摘要</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="rangeType2" name="rangeType" value="2" checked>
+                <label for="rangeType2">內文</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="rangeType3" name="rangeType" value="3" checked>
+                <label for="rangeType3">副標題</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="rangeType4" name="rangeType" value="4" checked>
+                <label for="rangeType4">圖片描述</label>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="convertBtn">轉換</button>
+            <button id="saveTxtBtn">另存TXT</button>
+        </div>
+        <textarea id="outputText" rows="6" readonly placeholder="提取的文字將顯示在此處..."></textarea>
+    </div>
+
+    <script>  
+        document.getElementById('convertBtn').addEventListener('click', function() {
+            const input = document.getElementById('inputText').value;
+            const outputTextArea = document.getElementById('outputText');
+            const checkboxes = document.querySelectorAll('input[name="rangeType"]:checked');
+            
+            if (checkboxes.length === 0) {
+                outputTextArea.value = '請至少選擇一個範圍種類';
+                return;
+            }
+            
+            let extracted = [];
+            const selectedTypes = Array.from(checkboxes).map(cb => cb.value);
+            const seenContent = new Set(); // 用於記錄已經處理過的內容
+            
+            // 統一使用正則表達式按順序匹配所有可能的標籤
+            const regex = /(<title>[\s\S]*?<\/title>)|(<span class="border-primary mb-6 block border-l-4 pl-3 md:mb-8">[\s\S]*?<br\/><\/span><\/p>)|(<p class="whitespace-pre-wrap break-words">[\s\S]*?<\/p>)|(<h3 class="mb-2">[\s\S]*?<\/h3>)|(<span class="img-caption ml-3 block text-left text-black-40 md:ml-0">[\s\S]*?<\/span><\/div>)/g;
+            let match;
+            
+            while ((match = regex.exec(input)) !== null) {
+                if (selectedTypes.includes('5') && match[1]) {
+                    const content = match[1].replace(/<title>([\s\S]*?)<\/title>/, '$1').trim();
+                    if (content) extracted.push(content);
+                } 
+                else if (selectedTypes.includes('1') && match[2]) {
+                    const content = match[2].replace(/<span class="border-primary mb-6 block border-l-4 pl-3 md:mb-8">([\s\S]*?)<br\/><\/span><\/p>/, '$1').trim();
+                    if (content) extracted.push(content);
+                }
+                else if (selectedTypes.includes('2') && match[3]) {
+                    let content = match[3].replace(/<p class="whitespace-pre-wrap break-words">([\s\S]*?)<\/p>/, '$1').trim();
+                    content = content.replace(/<a class=[\s\S]*?><strong>/g, '');
+                    content = content.replace(/<a class="[\s\S]*?">/g, '');
+                    content = content.replace(/<\/a>/g, ' ');
+                    content = content.replace(/<\/strong>/g, ' ');
+                    content = content.replace(/<strong>/g, ' ');
+                    if (content) extracted.push(content);
+                }
+                else if (selectedTypes.includes('3') && match[4]) {
+                    const content = match[4].replace(/<h3 class="mb-2">([\s\S]*?)<\/h3>/, '$1').trim();
+                    if (content) extracted.push(content);
+                }
+                else if (selectedTypes.includes('4') && match[5]) {
+                    const content = match[5].replace(/<span class="img-caption ml-3 block text-left text-black-40 md:ml-0">([\s\S]*?)<\/span><\/div>/, '$1').trim();
+                    // 檢查是否已經處理過這個內容
+                    if (content && !seenContent.has(content)) {
+                        extracted.push(content);
+                        seenContent.add(content); // 記錄已經處理過的內容
+                    }
+                }
+            }
+            
+            outputTextArea.value = extracted.length > 0 ? extracted.join('\n\n') : '未找到匹配的內容';
+        });
+
+        // 保持原有的保存功能不變
+        document.getElementById('saveTxtBtn').addEventListener('click', function() {
+            const outputText = document.getElementById('outputText').value;
+            if (!outputText) {
+                alert('沒有內容可保存');
+                return;
+            }
+            
+            const blob = new Blob([outputText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '提取內容.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>

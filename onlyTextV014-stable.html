@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中文提取器</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            resize: vertical;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #6200ea;
+        }
+        button {
+            background-color: #6200ea;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #7c4dff;
+        }
+        button:focus {
+            outline: none;
+        }
+        .button-container {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 15px;
+        }
+        .checkbox-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+        }
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        .checkbox-item label {
+            margin-right: 5px;
+            font-size: 10px;
+        }
+        .row-toggle {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #3a3a3a;
+            margin-left: 10px;
+        }
+        .row-toggle label {
+            margin-left: 5px;
+            font-size: 10px;
+        }
+        /* 输出框样式 */
+        #outputDiv {
+            width: 100%;
+            min-height: 150px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+        .circle-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            font-size: 12px;
+            font-weight: bold; /* 添加粗體 */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .circle-button:hover {
+            background-color: #0056b3;
+        }
+        /* 段落颜色 */
+        .color-0 { color: #ff7b7b; }
+        .color-1 { color: #7bb4ff; }
+        .color-2 { color: #7bff8c; }
+        .color-3 { color: #ffdd7b; }
+        .color-4 { color: #d67bff; }
+        .color-5 { color: #7bfff3; }
+        .color-6 { color: #ff7be8; }
+        .color-7 { color: #a3ff7b; }
+        .para-block {
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>中文提取器</h2>
+        <div class="button-container">
+            <a href="https://www.stheadline.com/news/%E6%B8%AF%E8%81%9E" target="_blank" class="circle-button">星鳥港聞</a>
+            <a href="https://hk.news.yahoo.com/world/" target="_blank" class="circle-button">Yahoo國際新聞</a>
+            <a href="https://news.ebc.net.tw/" target="_blank" class="circle-button">東森新聞</a>
+        </div>
+        <textarea id="inputBox" placeholder="請輸入包含中文的內容，可包含HTML換行標籤（如<br>、<p>或<br/></span></p><p）..."></textarea>
+        <div class="button-container">
+            <button onclick="extractChinese()">轉換</button>
+            <button onclick="saveAsTxt()">輸出成TXT</button>
+        </div>
+        <div id="checkboxContainer" class="checkbox-container"></div>
+        <div id="outputDiv" placeholder="提取的中文及全型標點將顯示在此，保留HTML分段與換行..."></div>
+    </div>
+
+    <script>
+        let currentParagraphs = [];
+        let removedIndices = new Set();
+        const colorClasses = ['color-0', 'color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7'];
+
+        function extractChinese() {
+            const input = document.getElementById('inputBox').value;
+            const chineseRegex = /[\u4e00-\u9fff\u3000-\u303f\uff01-\uff5e]/g;
+            const breakRegex = /\<(?:br)(?:\s*\/)?\>|\<br\/\>\<\/span\>\<\/p\>\<p/gi;
+            const paragraphRegex = /<p(?:\s*\/)?>|<\/p>/gi;
+
+            const segments = input.split(/(<p(?:\s*\/)?>|<\/p>)/i).filter(segment => segment.trim());
+            let output = [];
+            let currentParagraph = [];
+            let paragraphs = [];
+
+            segments.forEach(segment => {
+                if (segment.match(paragraphRegex)) {
+                    if (currentParagraph.length > 0) {
+                        paragraphs.push(currentParagraph.join(''));
+                        currentParagraph = [];
+                    }
+                    return;
+                }
+
+                const matches = segment.match(chineseRegex) || [];
+                let lastIndex = 0;
+                let temp = '';
+
+                segment.replace(chineseRegex, (match, offset) => {
+                    const subSegment = segment.slice(lastIndex, offset);
+                    if (subSegment.match(breakRegex)) {
+                        temp += '\n';
+                    }
+                    temp += match;
+                    lastIndex = offset + match.length;
+                });
+
+                if (segment.slice(lastIndex).match(breakRegex)) {
+                    temp += '\n';
+                }
+
+                if (temp) {
+                    currentParagraph.push(temp);
+                }
+            });
+
+            if (currentParagraph.length > 0) {
+                paragraphs.push(currentParagraph.join(''));
+            }
+
+            if (paragraphs.length > 2) {
+                paragraphs = paragraphs.slice(1, -1);
+            } else {
+                paragraphs = [];
+            }
+
+            currentParagraphs = [...paragraphs];
+            removedIndices = new Set();
+
+            updateCheckboxUI();
+            updateOutput();
+        }
+
+        function updateCheckboxUI() {
+            const container = document.getElementById('checkboxContainer');
+            container.innerHTML = '';
+            
+            // Group paragraphs into rows of 5
+            const rows = [];
+            for (let i = 0; i < currentParagraphs.length; i += 5) {
+                rows.push(currentParagraphs.slice(i, i + 5));
+            }
+            
+            rows.forEach((row, rowIndex) => {
+                const rowContainer = document.createElement('div');
+                rowContainer.className = 'checkbox-row';
+                
+                // Add checkboxes for each paragraph in the row
+                row.forEach((para, indexInRow) => {
+                    const globalIndex = rowIndex * 5 + indexInRow;
+                    const colorClass = colorClasses[globalIndex % colorClasses.length];
+                    
+                    const checkboxItem = document.createElement('div');
+                    checkboxItem.className = `checkbox-item ${colorClass}`;
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `para-${globalIndex}`;
+                    checkbox.checked = !removedIndices.has(globalIndex);
+                    checkbox.onchange = function() {
+                        if (this.checked) {
+                            removedIndices.delete(globalIndex);
+                        } else {
+                            removedIndices.add(globalIndex);
+                        }
+                        updateOutput();
+                    };
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `para-${globalIndex}`;
+                    label.textContent = `段落 ${globalIndex + 1}`;
+                    label.className = colorClass;
+                    
+                    checkboxItem.appendChild(checkbox);
+                    checkboxItem.appendChild(label);
+                    rowContainer.appendChild(checkboxItem);
+                });
+                
+                // Add master checkbox for the row
+                if (row.length > 0) {
+                    const rowToggle = document.createElement('div');
+                    rowToggle.className = 'row-toggle';
+                    
+                    const masterCheckbox = document.createElement('input');
+                    masterCheckbox.type = 'checkbox';
+                    masterCheckbox.checked = row.every((_, indexInRow) => {
+                        const globalIndex = rowIndex * 5 + indexInRow;
+                        return !removedIndices.has(globalIndex);
+                    });
+                    masterCheckbox.onchange = function() {
+                        row.forEach((_, indexInRow) => {
+                            const globalIndex = rowIndex * 5 + indexInRow;
+                            if (this.checked) {
+                                removedIndices.delete(globalIndex);
+                            } else {
+                                removedIndices.add(globalIndex);
+                            }
+                        });
+                        updateCheckboxUI();
+                        updateOutput();
+                    };
+                    
+                    const label = document.createElement('label');
+                    label.textContent = '全選';
+                    
+                    rowToggle.appendChild(masterCheckbox);
+                    rowToggle.appendChild(label);
+                    rowContainer.appendChild(rowToggle);
+                }
+                
+                container.appendChild(rowContainer);
+            });
+        }
+
+        function updateOutput() {
+            const outputDiv = document.getElementById('outputDiv');
+            outputDiv.innerHTML = '';
+            
+            currentParagraphs.forEach((para, index) => {
+                if (!removedIndices.has(index)) {
+                    const colorClass = colorClasses[index % colorClasses.length];
+                    const paraBlock = document.createElement('div');
+                    paraBlock.className = `para-block ${colorClass}`;
+                    paraBlock.textContent = para;
+                    outputDiv.appendChild(paraBlock);
+                }
+            });
+        }
+
+        function saveAsTxt() {
+            let outputText = '';
+            
+            currentParagraphs.forEach((para, index) => {
+                if (!removedIndices.has(index)) {
+                    outputText += para + '\n\n';
+                }
+            });
+
+            if (!outputText.trim()) {
+                alert('輸出框為空，請先點擊「轉換」按鈕生成內容！');
+                return;
+            }
+
+            const blob = new Blob([outputText.trim()], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'extracted_chinese.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

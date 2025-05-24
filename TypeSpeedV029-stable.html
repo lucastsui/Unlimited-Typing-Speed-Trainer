@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打字練習工具</title>
+    <style>
+        /* 霞鶩文楷 */
+@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.1.0/style.css');
+/* 馬善政手寫體 */
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+/* 站酷小微體 */
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&display=swap');
+/* 江西拙楷  */
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+QingKe+HuangYou&display=swap');
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        button, select {
+            padding: 8px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        select {
+            background-color: #f1f1f1;
+        }
+.typing-area {
+    border: 1px solid #ddd;
+    padding: 15px;
+    min-height: 600px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+#text-display {
+    font-size: 25px;
+    line-height: 1.6;
+    height: 450px;
+    color: #333;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    scroll-behavior: smooth; /* 添加平滑滾動效果 */
+}
+        #text-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            height: 400px;
+            resize: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9e9e9;
+            border-radius: 4px;
+        }
+        .stat-box {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .correct {
+            color: green;
+        }
+        .incorrect {
+            color: red;
+            text-decoration: underline;
+        }
+        .current {
+            background-color: #ffffcc;
+        }
+        .file-upload {
+            margin: 10px 0;
+        }
+        .practice-mode {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 10px;
+        }
+        .practice-mode label {
+            margin-left: 5px;
+        }
+        .finished-incorrect {
+            background-color: yellow;
+            text-decoration: underline;
+        }
+        #input-display {
+            width: 100%;
+            padding: 10px;
+            font-size: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: white;
+        }
+        .input-correct {
+            color: black;
+        }
+        .input-incorrect {
+            color: red;
+            text-decoration: underline;
+        }
+        .drop-area {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .drop-area.highlight {
+            border-color: #4CAF50;
+            background-color: #f0fff0;
+        }
+        .file-list {
+            margin-top: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+            border-radius: 4px;
+            transition: max-height 0.3s;
+        }
+        .file-list.collapsed {
+            max-height: 0;
+            overflow: hidden;
+            border: none;
+            padding: 0;
+        }
+        .file-item {
+            margin: 3px 0;
+            font-size: 14px;
+        }
+        .web-search-panel {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .web-search-panel select {
+            flex: 1;
+        }
+        .web-search-panel button {
+            flex: 0 0 auto;
+        }
+
+:root {
+    --correct-color: #008000;
+    --incorrect-color: #ff0000;
+}
+
+.correct {
+    color: var(--correct-color);
+}
+
+.incorrect, .finished-incorrect {
+    color: var(--incorrect-color);
+    text-decoration: underline;
+}
+
+.input-incorrect {
+    color: var(--incorrect-color);
+    text-decoration: underline;
+}
+
+.window-btn {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 30px;
+    height: 30px;
+    background-color: purple;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    user-select: none;
+}
+
+.window-icon {
+    color: white;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>打字練習工具</h1>
+        
+
+<div class="window-btn" title="左鍵:新視窗 中鍵:新分頁 滾輪:縮放 右鍵:重置">
+    <span class="window-icon">🗔</span>
+</div>        
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="time-select">練習時間：</label>
+                <select id="time-select">
+                    <option value="60">1分鐘</option>
+                    <option value="300">5分鐘</option>
+                    <option value="600" selected>10分鐘</option>
+                    <option value="900">15分鐘</option>
+                    <option value="1800">30分鐘</option>
+                    <option value="2700">45分鐘</option>
+                    <option value="3600">1小時</option>
+                    <option value="7200">2小時</option>
+                    <option value="10800">4小時</option>
+                </select>
+            </div>
+            
+<div class="control-group">
+                    <button id="start-btn">開始練習</button>
+                <button id="reset-btn">重新開始</button>
+    <div class="practice-mode">
+        <input type="checkbox" id="practice-mode" checked>
+        <label for="practice-mode">練習模式</label>
+    </div>
+    <select id="font-select">
+        <option value="'Microsoft JhengHei', Arial, sans-serif">預設字型</option>
+        <option value="'DFKai-SB', serif">標楷體</option>
+        <option value="'SimSun', serif">宋體</option>
+        <option value="'SimHei', sans-serif">黑體</option>
+        <option value="'KaiTi', serif">楷體</option>
+        <option value="'Courier New', monospace">等寬字型</option>
+  <option value="'LXGW WenKai', 'KaiTi', serif">霞鶩文楷</option>
+  <option value="'Ma Shan Zheng', cursive">馬善政手寫體</option>
+  <option value="'ZCOOL XiaoWei', cursive">站酷小微體</option>
+  <option value="'Jiangxi Zhuokai', serif">江西拙楷</option>
+
+
+    </select>
+</div>
+
+<div class="control-group">
+    <label for="correct-color">正確顏色：</label>
+    <input type="color" id="correct-color" value="#008000">
+    <label for="incorrect-color">錯誤顏色：</label>
+    <input type="color" id="incorrect-color" value="#ff0000">
+</div>
+            
+            <div class="control-group">
+                <label for="essay-select">選擇文章：</label>
+                <select id="essay-select">
+                    <option value="random" selected>隨機內部文章</option>
+                    <option value="upload">上傳外部文章</option>
+                    <option value="web">從網頁隨機找</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="file-upload" id="upload-area" style="display: none;">
+            <input type="file" id="txt-upload" accept=".txt" multiple>
+            <button id="upload-btn">上傳文章</button>
+            <div id="drop-area" class="drop-area">
+                <p>拖放TXT文件到這裡，或點擊選擇文件</p>
+                <div id="file-list" class="file-list"></div>
+            </div>
+        </div>
+        
+        <div id="web-search-area" style="display: none;">
+            <div class="web-search-panel">
+                <select id="web-language">
+                    <option value="zh">中文</option>
+                    <option value="en">英文</option>
+                </select>
+                <select id="web-source">
+                    <option value="wikipedia">維基百科</option>
+                    <option value="ltn">自由時報</option>
+                </select>
+                <button id="web-generate-btn">獲取文章</button>
+            </div>
+        </div>
+        
+        <div class="typing-area">
+            <div id="text-display">請點擊「開始練習」按鈕開始打字測試</div>
+            <textarea id="text-input" placeholder="當練習開始時，請在此輸入文字..." disabled></textarea>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">時間</div>
+                <div class="stat-value" id="timer">00:00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">速度</div>
+                <div class="stat-value" id="speed">0</div>
+                <div>字/分鐘</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">準確率</div>
+                <div class="stat-value" id="accuracy">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+
+const btn = document.querySelector('.window-btn');
+let scale = 1;
+
+btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.open(window.location.href, '_blank', 'width=800,height=600');
+});
+
+btn.addEventListener('auxclick', (e) => {
+    if (e.button === 1) {
+        e.preventDefault();
+        window.open(window.location.href, '_blank');
+    }
+});
+
+btn.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+        scale += 0.1;
+    } else {
+        scale -= 0.1;
+    }
+    scale = Math.max(0.1, Math.min(scale, 3));
+    document.body.style.transform = `scale(${scale})`;
+    document.body.style.transformOrigin = '0 0';
+});
+
+btn.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    scale = 1;
+    document.body.style.transform = 'scale(1)';
+    location.reload();
+});
+
+        // 預設文章庫
+        const essays = [
+            "打字練習是提高輸入效率的有效方法。通過持續的練習，你可以逐漸提高打字速度和準確率。建議每天花一些時間進行打字練習，注意保持正確的手指位置和姿勢。",
+            "電腦技術的發展日新月異，從早期的機械式鍵盤到現在的觸控輸入，輸入方式不斷演變。然而，鍵盤輸入仍然是目前最有效率的文字輸入方式之一，特別是在需要大量文字處理的工作中。",
+            "學習打字不僅可以提高工作效率，還能減少因長時間使用電腦而產生的疲勞。正確的打字姿勢包括雙手放在基本鍵位、手腕保持自然姿勢、眼睛盡量不看鍵盤等。",
+            "在數位時代，打字已成為一項基本技能。無論是學生、上班族還是自由工作者，快速準確的打字能力都能為工作和學習帶來便利。打字練習應該注重準確性而非速度，隨著練習的增加，速度自然會提升。",
+            "打字速度的測量通常以每分鐘能輸入的字數為單位。一般人的打字速度約為30-50字/分鐘，經過訓練可以達到80-120字/分鐘。專業打字員的速度甚至可以超過150字/分鐘。"
+        ];
+
+        function getRandomEssay() {
+    return essays[Math.floor(Math.random() * essays.length)];
+}
+        
+        // 網頁文章來源配置
+        const sourceOptions = {
+            zh: [
+                { value: 'wikipedia', text: '維基百科', url: 'https://zh.wikipedia.org/w/api.php' },
+                { value: 'ltn', text: '自由時報', url: 'https://api.rss2json.com/v1/api.json?rss_url=https://news.ltn.com.tw/rss/all.xml' },
+            ],
+            en: [
+                { value: 'wikipedia', text: 'Wikipedia', url: 'https://en.wikipedia.org/w/api.php' },
+                { value: 'bbc', text: 'BBC News', url: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.bbci.co.uk/news/rss.xml' },
+            ]
+        };
+        
+        // DOM 元素
+        const textDisplay = document.getElementById('text-display');
+        const textInput = document.getElementById('text-input');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const timerDisplay = document.getElementById('timer');
+        const speedDisplay = document.getElementById('speed');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const timeSelect = document.getElementById('time-select');
+        const essaySelect = document.getElementById('essay-select');
+        const uploadArea = document.getElementById('upload-area');
+        const txtUpload = document.getElementById('txt-upload');
+        const uploadBtn = document.getElementById('upload-btn');
+        const practiceMode = document.getElementById('practice-mode');
+        const dropArea = document.getElementById('drop-area');
+        const fileList = document.getElementById('file-list');
+        const webSearchArea = document.getElementById('web-search-area');
+        const webLanguage = document.getElementById('web-language');
+        const webSource = document.getElementById('web-source');
+        const webGenerateBtn = document.getElementById('web-generate-btn');
+        
+        const fontSelect = document.getElementById('font-select');
+const correctColor = document.getElementById('correct-color');
+const incorrectColor = document.getElementById('incorrect-color');
+
+// 新增事件監聽
+
+        // 變數
+        let timer;
+        let timeLeft;
+        let isTyping = false;
+        let startTime;
+        let totalTyped = 0;
+        let correctTyped = 0;
+        let currentEssay = "";
+        let userUploadedEssays = [];
+        let charStatus = [];
+        let isComposing = false;
+        let currentCharIndex = 0;
+        
+        // 事件監聽
+        startBtn.addEventListener('click', startTyping);
+        resetBtn.addEventListener('click', resetTyping);
+        textInput.addEventListener('input', checkTyping);
+        textInput.addEventListener('compositionstart', function() { isComposing = true; });
+        textInput.addEventListener('compositionend', function() { isComposing = false; checkTyping(); });
+        essaySelect.addEventListener('change', toggleSourceArea);
+        uploadBtn.addEventListener('click', handleFileUpload);
+        txtUpload.addEventListener('change', handleFileUpload);
+        webLanguage.addEventListener('change', updateWebSources);
+        webGenerateBtn.addEventListener('click', fetchWebArticle);
+
+        fontSelect.addEventListener('change', updateFontStyle);
+correctColor.addEventListener('change', updateColorStyles);
+incorrectColor.addEventListener('change', updateColorStyles);
+        
+        
+        // 拖放相關事件
+        dropArea.addEventListener('click', () => txtUpload.click());
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('highlight');
+        });
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('highlight');
+        });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('highlight');
+            if (e.dataTransfer.files.length) {
+                txtUpload.files = e.dataTransfer.files;
+                handleFileUpload();
+            }
+        });
+        
+        // 初始化網頁來源選單
+        updateWebSources();
+        
+// 新增函數
+function updateFontStyle() {
+    const fontFamily = fontSelect.value;
+    textDisplay.style.fontFamily = fontFamily;
+    textInput.style.fontFamily = fontFamily;
+    const inputDisplay = document.getElementById('input-display');
+    if (inputDisplay) {
+        inputDisplay.style.fontFamily = fontFamily;
+    }
+}
+
+function updateColorStyles() {
+    const correct = correctColor.value;
+    const incorrect = incorrectColor.value;
+    
+    // 更新 CSS 變數
+    document.documentElement.style.setProperty('--correct-color', correct);
+    document.documentElement.style.setProperty('--incorrect-color', incorrect);
+    
+    // 更新現有樣式
+    const correctSpans = document.querySelectorAll('.correct');
+    const incorrectSpans = document.querySelectorAll('.incorrect, .finished-incorrect');
+    const inputCorrect = document.querySelectorAll('.input-correct');
+    const inputIncorrect = document.querySelectorAll('.input-incorrect');
+    
+    correctSpans.forEach(span => span.style.color = correct);
+    incorrectSpans.forEach(span => span.style.color = incorrect);
+    inputCorrect.forEach(span => span.style.color = 'black');
+    inputIncorrect.forEach(span => span.style.color = incorrect);
+}
+
+
+
+        // 切換來源區域顯示
+        function toggleSourceArea() {
+            const selectedOption = essaySelect.value;
+            uploadArea.style.display = selectedOption === 'upload' ? 'block' : 'none';
+            webSearchArea.style.display = selectedOption === 'web' ? 'block' : 'none';
+            
+            // 自動折疊拖放區域
+            if (selectedOption !== 'upload') {
+                fileList.classList.add('collapsed');
+            }
+        }
+        
+        // 更新網頁來源選單
+        function updateWebSources() {
+            const language = webLanguage.value;
+            webSource.innerHTML = '';
+            sourceOptions[language].forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                webSource.appendChild(opt);
+            });
+        }
+        
+        // 從網頁獲取文章
+        async function fetchWebArticle() {
+            const language = webLanguage.value;
+            const source = webSource.value;
+            
+            try {
+                let paragraphs = [];
+                if (source === 'wikipedia') {
+                    const wikiUrl = sourceOptions[language].find(opt => opt.value === 'wikipedia').url;
+                    const response = await fetch(`${wikiUrl}?action=query&format=json&list=random&rnlimit=1&rnnamespace=0&origin=*`);
+                    const data = await response.json();
+                    const pageId = data.query.random[0].id;
+                    const contentResponse = await fetch(`${wikiUrl}?action=query&format=json&prop=extracts&pageids=${pageId}&exsectionformat=plain&origin=*`);
+                    const contentData = await contentResponse.json();
+                    const extract = contentData.query.pages[pageId].extract;
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = extract;
+                    paragraphs = Array.from(tempDiv.getElementsByTagName('p'))
+                        .map(p => p.textContent.trim())
+                        .filter(p => p.length >= 50 && p.length <= 300);
+                } else {
+                    const rssUrl = sourceOptions[language].find(opt => opt.value === source).url;
+                    const response = await fetch(rssUrl);
+                    const data = await response.json();
+                    const items = data.items || [];
+                    paragraphs = items
+                        .map(item => item.description || item.content || '')
+                        .filter(text => text.length >= 50 && text.length <= 300);
+                }
+                
+                if (paragraphs.length > 0) {
+                    currentEssay = paragraphs.join('\n\n');
+                    textDisplay.textContent = currentEssay;
+                    alert('文章已成功載入，請點擊「開始練習」按鈕開始練習');
+                } else {
+                    alert('未找到合適的文章段落，請嘗試其他來源或語言');
+                }
+            } catch (error) {
+                console.error('Error fetching web article:', error);
+                alert('無法加載文章，請稍後再試或檢查網路連接');
+            }
+        }
+        
+        // 處理文件上傳
+        function handleFileUpload() {
+            const files = txtUpload.files;
+            if (!files || files.length === 0) {
+                alert('請先選擇一個或多個 TXT 文件');
+                return;
+            }
+            
+            userUploadedEssays = [];
+            fileList.innerHTML = '';
+            fileList.classList.remove('collapsed');
+            
+            let filesProcessed = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    userUploadedEssays.push(e.target.result);
+                    
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.textContent = file.name;
+                    fileList.appendChild(fileItem);
+                    
+                    filesProcessed++;
+                    if (filesProcessed === files.length) {
+                        alert(`成功上傳 ${files.length} 個文件！`);
+                        // 自動折疊拖放區域
+                        setTimeout(() => {
+                            fileList.classList.add('collapsed');
+                        }, 3000);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    alert(`讀取文件 ${file.name} 時發生錯誤`);
+                    filesProcessed++;
+                };
+                
+                reader.readAsText(file, 'UTF-8');
+            }
+        }
+        
+        // 開始打字練習
+function startTyping() {
+    if (isTyping) return;
+    
+    // 選擇文章
+    if (essaySelect.value === 'upload') {
+        if (userUploadedEssays.length === 0) {
+            alert('請先上傳自訂文章或選擇隨機文章');
+            return;
+        }
+        currentEssay = userUploadedEssays[Math.floor(Math.random() * userUploadedEssays.length)];
+    } else if (essaySelect.value === 'random') {
+        currentEssay = getRandomEssay();
+    } else if (essaySelect.value === 'web' && !currentEssay) {
+        alert('請先使用「獲取文章」按鈕從網頁載入文章');
+        return;
+    }
+    
+    // 初始化字符狀態陣列
+    charStatus = new Array(currentEssay.length).fill(null);
+    currentCharIndex = 0;
+    
+    // 重置狀態
+    resetTyping(true);
+    
+    // 設置文章顯示
+    displayEssay();
+    
+    // 啟用輸入框
+    textInput.disabled = false;
+    textInput.focus();
+    
+    // 設置計時器
+    timeLeft = parseInt(timeSelect.value);
+    updateTimerDisplay();
+    
+    timer = setInterval(function() {
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+            finishTyping();
+        }
+    }, 1000);
+    
+    startTime = new Date().getTime();
+    isTyping = true;
+    
+    // 新增: 滾動到打字區域頂部
+    const typingArea = document.querySelector('.typing-area');
+    typingArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+
+}
+        
+        // 獲取隨機文章
+    function startTyping() {
+        if (isTyping) return;
+        
+        // 選擇文章
+        if (essaySelect.value === 'upload') {
+            if (userUploadedEssays.length === 0) {
+                alert('請先上傳自訂文章或選擇隨機文章');
+                return;
+            }
+            currentEssay = userUploadedEssays[Math.floor(Math.random() * userUploadedEssays.length)];
+        } else if (essaySelect.value === 'random') {
+            currentEssay = getRandomEssay();
+        } else if (essaySelect.value === 'web' && !currentEssay) {
+            alert('請先使用「獲取文章」按鈕從網頁載入文章');
+            return;
+        }
+        
+        // 初始化字符狀態陣列
+        charStatus = new Array(currentEssay.length).fill(null);
+        currentCharIndex = 0;
+        
+        // 重置狀態
+        resetTyping(true);
+        
+        // 設置文章顯示
+        displayEssay();
+        
+        // 啟用輸入框
+        textInput.disabled = false;
+        textInput.focus();
+        
+        // 設置計時器
+        timeLeft = parseInt(timeSelect.value);
+        updateTimerDisplay();
+        
+        timer = setInterval(function() {
+            timeLeft--;
+            updateTimerDisplay();
+            
+            if (timeLeft <= 0) {
+                finishTyping();
+            }
+        }, 1000);
+        
+        startTime = new Date().getTime();
+        isTyping = true;
+        
+        // 新增: 將 typing-area 固定在視窗頂部
+        const typingArea = document.querySelector('.typing-area');
+        typingArea.style.position = 'sticky';
+        typingArea.style.top = '0';
+        typingArea.style.zIndex = '100';
+        typingArea.style.backgroundColor = 'white'; // 確保背景不透明
+        window.scrollTo(0, typingArea.offsetTop);
+    }
+
+        // 完成打字練習
+        function finishTyping() {
+            clearInterval(timer);
+            isTyping = false;
+            textInput.disabled = true;
+            
+            // 計算最終統計數據
+            const elapsedTime = parseInt(timeSelect.value) - timeLeft;
+            const minutes = elapsedTime / 60;
+            const speed = Math.round(totalTyped / minutes);
+            const accuracy = Math.round((correctTyped / totalTyped) * 100) || 0;
+            
+            speedDisplay.textContent = speed;
+            accuracyDisplay.textContent = accuracy + '%';
+            
+            // 顯示所有標記
+            showAllMarkings();
+            
+            // 標記打字框中的錯誤
+            markInputErrors();
+        }          
+        
+        // 重置打字練習
+   function resetTyping(keepEssay = false) {
+        clearInterval(timer);
+        isTyping = false;
+        totalTyped = 0;
+        correctTyped = 0;
+        textInput.value = '';
+        textInput.disabled = true;
+        
+        // 移除輸入顯示div（如果存在）
+        const inputDisplay = document.getElementById('input-display');
+        if (inputDisplay) {
+            inputDisplay.remove();
+            textInput.style.display = 'block';
+        }
+        
+        // 恢復 typing-area 的樣式
+        const typingArea = document.querySelector('.typing-area');
+        typingArea.style.position = '';
+        typingArea.style.top = '';
+        typingArea.style.zIndex = '';
+        typingArea.style.backgroundColor = '';
+        
+        updateStats();
+        
+        if (!keepEssay) {
+            // 如果不是在開始練習時調用的重置，則重新選擇文章
+            if (essaySelect.value === 'random') {
+                currentEssay = getRandomEssay();
+            } else if (essaySelect.value === 'upload' && userUploadedEssays.length > 0) {
+                currentEssay = userUploadedEssays[Math.floor(Math.random() * userUploadedEssays.length)];
+            }
+        }
+        
+        if (currentEssay) {
+            displayEssay();
+        }
+    }
+        
+        // 更新計時器顯示
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = 
+                (minutes < 10 ? '0' : '') + minutes + ':' + 
+                (seconds < 10 ? '0' : '') + seconds;
+        }
+        
+        // 顯示文章
+        function displayEssay() {
+            let html = '';
+            for (let i = 0; i < currentEssay.length; i++) {
+                if (currentEssay[i] === '\n') {
+                    html += '<br>';
+                } else if (currentEssay[i] === '　') {
+                    html += '<span id="char-' + i + '" class="fullwidth-space">□</span>';
+                } else {
+                    html += '<span id="char-' + i + '">' + currentEssay[i] + '</span>';
+                }
+            }
+            textDisplay.innerHTML = html;
+            
+            // 標記第一個字符為當前
+            markCurrentChar(0);
+        }
+        
+// 標記當前字符
+// 標記當前字符
+function markCurrentChar(index) {
+    // 移除所有當前標記
+    var currentChars = document.querySelectorAll('.current');
+    for (var i = 0; i < currentChars.length; i++) {
+        currentChars[i].classList.remove('current');
+    }
+    
+    // 如果已經到達文章末尾，則不標記
+    if (index >= currentEssay.length) return;
+    
+    // 找到對應文章位置的字符（不跳過換行符）
+    var charElement = document.getElementById('char-' + index);
+    if (charElement) {
+        charElement.classList.add('current');
+        
+        // 檢查是否是新的一行開始（當前字符是換行符後的字符）
+        const isNewLineStart = index > 0 && currentEssay[index-1] === '\n';
+        
+        // 獲取當前行的字符索引範圍
+        let lineStart = index;
+        while (lineStart > 0 && currentEssay[lineStart-1] !== '\n') {
+            lineStart--;
+        }
+        let lineEnd = index;
+        while (lineEnd < currentEssay.length && currentEssay[lineEnd] !== '\n') {
+            lineEnd++;
+        }
+        
+        // 計算當前字符在行中的位置（從0開始）
+        const charInLinePos = index - lineStart;
+        
+        // 只在每行的第3個字符檢查一次滾動
+        if (charInLinePos === 2) {
+            const textDisplay = document.getElementById('text-display');
+            const charRect = charElement.getBoundingClientRect();
+            const textDisplayRect = textDisplay.getBoundingClientRect();
+            
+            // 計算顯示框的下1/4位置 0.75
+            const lowerQuarter = textDisplayRect.top + textDisplayRect.height * 0.60;
+            
+            // 如果當前字符已經超過下1/4位置，則滾動
+            if (charRect.bottom > lowerQuarter) {
+                // 計算滾動位置，使當前行位於頂部
+                const lineStartElement = document.getElementById('char-' + lineStart);
+                if (lineStartElement) {
+                    const lineStartRect = lineStartElement.getBoundingClientRect();
+                    const scrollTop = lineStartRect.top - textDisplayRect.top + textDisplay.scrollTop;
+                    textDisplay.scrollTop = scrollTop;
+                }
+            }
+        }
+    }
+}
+        
+        // 檢查打字輸入
+// 檢查打字輸入
+    function checkTyping() {
+        if (!isTyping || isComposing) return;
+        
+        const inputText = textInput.value;
+        totalTyped = inputText.length;
+        
+        let correctCount = 0;
+        let inputIndex = 0;
+        let essayIndex = 0;
+        
+        // 處理刪除操作：當輸入長度減少時，重置相應字符狀態
+        if (inputText.length < currentCharIndex) {
+            // 重置從當前輸入長度到之前 currentCharIndex 之間的字符狀態
+            for (let i = inputText.length; i < currentCharIndex && i < currentEssay.length; i++) {
+                charStatus[i] = null;
+                updateCharDisplay(i); // 立即更新顯示
+            }
+            currentCharIndex = inputText.length;
+        }
+        
+        // 只處理到當前應該處理的字符為止
+        while (inputIndex < inputText.length && essayIndex < currentEssay.length) {
+            // 處理換行符號
+            if (currentEssay[essayIndex] === '\n') {
+                if (inputText[inputIndex] === '\n') {
+                    charStatus[essayIndex] = true; // 標記為正確
+                    correctCount++;
+                    inputIndex++;
+                }
+                essayIndex++;
+                continue;
+            }
+            
+            // 跳過輸入中的換行符（如果文章當前不是換行符）
+            if (inputText[inputIndex] === '\n') {
+                inputIndex++;
+                continue;
+            }
+            
+            const expectedChar = currentEssay[essayIndex];
+            const typedChar = inputText[inputIndex];
+            
+            // 檢查是否匹配（包括中文標點符號）
+            if (typedChar === expectedChar || 
+                isSpecialSpace(expectedChar) && isSpecialSpace(typedChar) ||
+                isChinesePunctuation(expectedChar) && isChinesePunctuation(typedChar)) {
+                charStatus[essayIndex] = true; // 標記為正確
+                correctCount++;
+            } else {
+                charStatus[essayIndex] = false; // 標記為錯誤
+            }
+            
+            // 如果練習模式開啟，立即更新顯示
+            if (practiceMode.checked) {
+                updateCharDisplay(essayIndex);
+            }
+            
+            inputIndex++;
+            essayIndex++;
+        }
+        
+        // 更新當前應該處理的字符索引（使用文章位置而非輸入位置）
+        currentCharIndex = essayIndex;
+        
+        // 標記當前字符
+        markCurrentChar(currentCharIndex);
+        
+        // 自動滾動輸入框
+        textInput.scrollTop = textInput.scrollHeight;
+        
+        correctTyped = correctCount;
+        updateStats();
+        
+        // 檢查是否已完成所有文章內容
+        if (currentCharIndex >= currentEssay.length) {
+            finishTyping();
+        }
+    }
+        
+        // 更新單個字符的顯示
+        function updateCharDisplay(index) {
+            const charSpan = document.getElementById('char-' + index);
+            if (!charSpan) return;
+            
+            charSpan.classList.remove('correct', 'incorrect', 'finished-incorrect');
+            
+            if (charStatus[index] === true) {
+                charSpan.classList.add('correct');
+            } else if (charStatus[index] === false) {
+                if (isTyping && practiceMode.checked) {
+                    charSpan.classList.add('incorrect'); // 練習中顯示紅色錯誤
+                } else {
+                    charSpan.classList.add('finished-incorrect'); // 結束後顯示黃色錯誤
+                }
+            }
+        }
+
+        // 標記打字框中的錯誤
+        function markInputErrors() {
+            const inputText = textInput.value;
+            let html = '';
+            let inputIndex = 0;
+            let essayIndex = 0;
+            
+            while (inputIndex < inputText.length && essayIndex < currentEssay.length) {
+                const char = inputText[inputIndex];
+                
+                // 處理換行符
+                if (currentEssay[essayIndex] === '\n') {
+                    if (char === '\n') {
+                        html += '<span class="input-correct">\n</span>';
+                        inputIndex++;
+                    } else {
+                        html += '<span class="input-incorrect">' + char + '</span>';
+                        inputIndex++;
+                    }
+                    essayIndex++;
+                    continue;
+                }
+                
+                // 跳過文章中的換行符
+                if (char === '\n') {
+                    html += '<span class="input-incorrect">\n</span>';
+                    inputIndex++;
+                    continue;
+                }
+                
+                const expectedChar = currentEssay[essayIndex];
+                
+                if (char === expectedChar || 
+                    isSpecialSpace(expectedChar) && isSpecialSpace(char) ||
+                    isChinesePunctuation(expectedChar) && isChinesePunctuation(char)) {
+                    html += '<span class="input-correct">' + char + '</span>';
+                } else {
+                    html += '<span class="input-incorrect">' + char + '</span>';
+                }
+                
+                inputIndex++;
+                essayIndex++;
+            }
+            
+            // 處理多餘的輸入字元
+            while (inputIndex < inputText.length) {
+                html += '<span class="input-incorrect">' + inputText[inputIndex] + '</span>';
+                inputIndex++;
+            }
+            
+            // 使用div來顯示帶樣式的輸入內容
+            const inputDisplay = document.createElement('div');
+            inputDisplay.id = 'input-display';
+            inputDisplay.innerHTML = html;
+            
+            // 替換原來的textarea
+            textInput.style.display = 'none';
+            textInput.parentNode.insertBefore(inputDisplay, textInput);
+        }
+
+        // 顯示所有正確/錯誤標記
+        function showAllMarkings() {
+            for (let i = 0; i < charStatus.length; i++) {
+                updateCharDisplay(i);
+            }
+        }
+        
+        // 輔助函式：檢查是否為特殊空格（全形或半形）
+        function isSpecialSpace(char) {
+            return char === ' ' || char === '　';
+        }
+        
+        // 輔助函式：檢查是否為中文標點符號
+function isChinesePunctuation(char) {
+    // 擴展中文標點符號列表
+    const chinesePunctuation = /[，。、；：？！「」『』（）【】《》﹁﹂…—～‧]/;
+    return chinesePunctuation.test(char);
+}
+        
+        // 更新統計數據
+        function updateStats() {
+            if (!isTyping) return;
+            
+            const elapsedTime = (parseInt(timeSelect.value) - timeLeft) / 60;
+            const speed = Math.round(totalTyped / elapsedTime) || 0;
+            const accuracy = Math.round((correctTyped / totalTyped) * 100) || 0;
+            
+            speedDisplay.textContent = speed;
+            accuracyDisplay.textContent = accuracy + '%';
+        }
+    </script>
+</body>
+</html>

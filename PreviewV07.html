@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+:root {
+    --bg-level1: #0a0a0a;
+    --bg-level2: #1a1a1a;
+    --bg-level3: #262626;
+}
+
+/* 自動生成無框線樣式 */
+body {
+    margin: 0;
+    height: 100vh;
+    background: var(--bg-level1);
+    display: flex;
+}
+
+.container {
+    flex: 1;
+    display: flex;
+    padding: 2px;
+    background: var(--bg-level2);
+}
+
+.container > .container {
+    padding: 1px;
+    background: var(--bg-level3);
+}
+
+.vertical { flex-direction: column; }
+.horizontal { flex-direction: row; }
+
+.iframe-box {
+    background: var(--bg-level3);
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+</style>
+</head>
+<body>
+<div class="container horizontal">
+    <div class="container vertical">
+        <div class="iframe-box" style="flex: 1">
+            <iframe src="onlyTextV014-stable.html"></iframe>
+        </div>
+        <div class="iframe-box" style="flex: 1">
+            <iframe src="specialOnlyTextV011-stable[HK01].html"></iframe>
+        </div>
+    </div>
+    <div class="iframe-box" style="flex: 1.2">
+        <iframe src="specialOnlyFormatorV26-stable.html"></iframe>
+    </div>
+    <div class="iframe-box" style="flex: 3">
+        <iframe src="TypeSpeedV029-stable.html"></iframe>
+    </div>
+</div>
+
+</body>
+</html>

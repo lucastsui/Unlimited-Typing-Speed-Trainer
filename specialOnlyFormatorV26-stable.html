@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB文字提取器</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #48c9b0; /* 薄荷綠 */
+        }
+        textarea, input[type="text"] {
+            background-color: #2c2c2c;
+            color: #ffffff;
+            border: 1px solid #555;
+            padding: 10px;
+            margin: 5px;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 5px;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        .condition-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .condition-group input[type="text"] {
+            width: 110px;
+        }
+        button {
+            background-color: #6a0dad; /* 紫色 */
+            color: #ffffff;
+            border: none;
+            padding: 5px 5px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #7b1fa2;
+        }
+        .remove-btn {
+            background-color: #d32f2f; /* 紅色，用於刪除 */
+        }
+        .remove-btn:hover {
+            background-color: #e53935;
+        }
+        #conditions-container {
+            width: 100%;
+            max-width: 600px;
+        }
+        .not-inputs {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .not-pair {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        label {
+            background-color: #6a0dad;
+            color: #ffffff;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        label:hover {
+            background-color: #7b1fa2;
+        }
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #postFilters {
+            width: 100px;
+        }
+        
+        /* 新增的onlyText樣式 */
+        .checkbox-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+        }
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        .checkbox-item label {
+            margin-right: 5px;
+            font-size: 10px;
+        }
+        .row-toggle {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #3a3a3a;
+            margin-left: 10px;
+        }
+        .row-toggle label {
+            margin-left: 5px;
+            font-size: 10px;
+        }
+        /* 段落颜色 */
+        .color-0 { color: #ff7b7b; }
+        .color-1 { color: #7bb4ff; }
+        .color-2 { color: #7bff8c; }
+        .color-3 { color: #ffdd7b; }
+        .color-4 { color: #d67bff; }
+        .color-5 { color: #7bfff3; }
+        .color-6 { color: #ff7be8; }
+        .color-7 { color: #a3ff7b; }
+        .para-block {
+            margin-bottom: 1em;
+        }
+        #outputDiv {
+            width: 100%;
+            min-height: 150px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            white-space: pre-wrap;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WEB文字提取器</h1>
+    <input type="text" id="urlInput" placeholder="請輸入網址...">
+    <textarea id="inputHtml" placeholder="請貼上您的HTML程式碼..."></textarea>
+    <div id="conditions-container">
+        <div class="condition-group">
+            <input type="text" class="tag-a" placeholder="開始標籤 (例如：<p>)">
+            <input type="text" class="tag-b" placeholder="結束標籤 (例如：</p>)">
+            <button onclick="addCondition()">+</button>
+            <button onclick="addNotCondition(this)">NOT</button>
+            <button class="remove-btn" onclick="removeConditionGroup(this)">X</button>
+        </div>
+    </div>
+    <div class="filter-controls">
+        <label for="loadFilter">載入過濾</label>
+        <input type="file" id="loadFilter" accept=".txt" onchange="loadFilter(event)">
+        <button onclick="saveFilter()">保存過濾</button>
+        <button onclick="extractText()">轉換</button>
+        <input type="text" id="postFilters" placeholder="後置過濾條件 (以逗號分隔，例如：'s,abc)">
+    </div>
+    
+    <!-- 修改後的輸出區域 -->
+    <div id="checkboxContainer" class="checkbox-container"></div>
+    <div id="outputDiv"></div>
+    <button onclick="saveAsTxt()">儲存為TXT</button>
+
+    <script>
+        // 新增的變量
+        let currentParagraphs = [];
+        let removedIndices = new Set();
+        const colorClasses = ['color-0', 'color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7'];
+
+        function addCondition() {
+            const container = document.getElementById('conditions-container');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'condition-group';
+            newGroup.innerHTML = `
+                <input type="text" class="tag-a" placeholder="開始標籤 (例如：<p>)">
+                <input type="text" class="tag-b" placeholder="結束標籤 (例如：</p>)">
+                <button onclick="addCondition()">+</button>
+                <button onclick="addNotCondition(this)">NOT</button>
+                <button class="remove-btn" onclick="removeConditionGroup(this)">X</button>
+            `;
+            container.appendChild(newGroup);
+        }
+
+        function addNotCondition(button) {
+            const group = button.parentElement;
+            let notInputs = group.querySelector('.not-inputs');
+            if (!notInputs) {
+                notInputs = document.createElement('div');
+                notInputs.className = 'not-inputs';
+                group.appendChild(notInputs);
+            }
+            const newNotPair = document.createElement('div');
+            newNotPair.className = 'not-pair';
+            newNotPair.innerHTML = `
+                <input type="text" class="tag-not-start" placeholder="排除開始標籤或文字 (例如：<span> 或 's)">
+                <input type="text" class="tag-not-end" placeholder="排除結束標籤 (例如：</span>，可留空)">
+                <button class="remove-btn" onclick="removeNotPair(this)">X</button>
+            `;
+            notInputs.appendChild(newNotPair);
+        }
+
+        function removeConditionGroup(button) {
+            const group = button.parentElement;
+            group.remove();
+        }
+
+        function removeNotPair(button) {
+            const notPair = button.parentElement;
+            const notInputs = notPair.parentElement;
+            notPair.remove();
+            if (notInputs.children.length === 0) {
+                notInputs.remove();
+            }
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\']/g, '\\$&');
+        }
+
+        function encodeSpecialChars(str) {
+            if (typeof str !== 'string') return str;
+            return str
+                .replace(/"/g, '😄')
+                .replace(/>/g, '😁')
+                .replace(/<\//g, '😊');
+        }
+
+        function decodeSpecialChars(str) {
+            if (typeof str !== 'string') return str;
+            return str
+                .replace(/😄/g, '"')
+                .replace(/😁/g, '>')
+                .replace(/😊/g, '</');
+        }
+
+        function extractText() {
+            const htmlInput = document.getElementById('inputHtml').value;
+            const conditions = document.querySelectorAll('.condition-group');
+            const postFiltersInput = document.getElementById('postFilters').value.trim();
+            let matches = [];
+            let errorMessages = [];
+
+            Array.from(conditions).forEach((group, groupIndex) => {
+                const tagA = group.querySelector('.tag-a').value.trim();
+                const tagB = group.querySelector('.tag-b').value.trim();
+                const notPairs = group.querySelectorAll('.not-pair');
+
+                if (tagA && tagB) {
+                    try {
+                        const escapedTagA = escapeRegExp(tagA);
+                        const escapedTagB = escapeRegExp(tagB);
+                        const regexAB = new RegExp(`${escapedTagA}(.*?)${escapedTagB}`, 'gs');
+
+                        let match;
+                        while ((match = regexAB.exec(htmlInput)) !== null) {
+                            let content = match[1];
+
+                            notPairs.forEach(pair => {
+                                const tagNotStart = pair.querySelector('.tag-not-start').value.trim();
+                                const tagNotEnd = pair.querySelector('.tag-not-end').value.trim();
+                                if (tagNotStart) {
+                                    try {
+                                        const escapedNotStart = escapeRegExp(tagNotStart);
+                                        const escapedNotEnd = tagNotEnd ? escapeRegExp(tagNotEnd) : '';
+                                        const regexNot = new RegExp(
+                                            escapedNotEnd ? `${escapedNotStart}.*?${escapedNotEnd}` : escapedNotStart,
+                                            'gs'
+                                        );
+                                        content = content.replace(regexNot, '');
+                                    } catch (e) {
+                                        errorMessages.push(`無效的NOT條件: ${tagNotStart}-${tagNotEnd}`);
+                                    }
+                                }
+                            });
+
+                            if (content.trim()) {
+                                matches.push({ content: content.trim(), groupIndex });
+                            }
+                        }
+                    } catch (e) {
+                        errorMessages.push(`無效的條件組: ${tagA}-${tagB}`);
+                    }
+                }
+            });
+
+            const seen = new Set();
+            let extracted = [];
+            matches.forEach(match => {
+                if (!seen.has(match.content)) {
+                    seen.add(match.content);
+                    extracted.push(match);
+                }
+            });
+
+            if (postFiltersInput) {
+                const postFilters = postFiltersInput.split(',')
+                    .map(f => f.trim())
+                    .filter(f => f);
+                if (postFilters.length > 0) {
+                    extracted = extracted.filter(({ content }) => {
+                        return !postFilters.some(filter => {
+                            try {
+                                const escapedFilter = escapeRegExp(filter);
+                                const regexFilter = new RegExp(escapedFilter, 'g');
+                                return regexFilter.test(content);
+                            } catch (e) {
+                                errorMessages.push(`無效的後置過濾條件: ${filter}`);
+                                return false;
+                            }
+                        });
+                    });
+                }
+            }
+
+            extracted.sort((a, b) => a.groupIndex - b.groupIndex);
+
+            currentParagraphs = extracted.map(item => item.content);
+            removedIndices = new Set();
+            
+            updateCheckboxUI();
+            updateOutput();
+
+            if (errorMessages.length > 0) {
+                alert(`處理過程中發現以下問題：\n${errorMessages.join('\n')}`);
+            }
+            if (extracted.length === 0 && matches.length > 0) {
+                alert('警告：所有提取內容被過濾條件移除，請檢查條件組、NOT條件或後置過濾設置！');
+            }
+        }
+
+        // 新增的函數
+        function updateCheckboxUI() {
+            const container = document.getElementById('checkboxContainer');
+            container.innerHTML = '';
+            
+            const rows = [];
+            for (let i = 0; i < currentParagraphs.length; i += 5) {
+                rows.push(currentParagraphs.slice(i, i + 5));
+            }
+            
+            rows.forEach((row, rowIndex) => {
+                const rowContainer = document.createElement('div');
+                rowContainer.className = 'checkbox-row';
+                
+                row.forEach((para, indexInRow) => {
+                    const globalIndex = rowIndex * 5 + indexInRow;
+                    const colorClass = colorClasses[globalIndex % colorClasses.length];
+                    
+                    const checkboxItem = document.createElement('div');
+                    checkboxItem.className = `checkbox-item ${colorClass}`;
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `para-${globalIndex}`;
+                    checkbox.checked = !removedIndices.has(globalIndex);
+                    checkbox.onchange = function() {
+                        if (this.checked) {
+                            removedIndices.delete(globalIndex);
+                        } else {
+                            removedIndices.add(globalIndex);
+                        }
+                        updateOutput();
+                    };
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `para-${globalIndex}`;
+                    label.textContent = `段落 ${globalIndex + 1}`;
+                    label.className = colorClass;
+                    
+                    checkboxItem.appendChild(checkbox);
+                    checkboxItem.appendChild(label);
+                    rowContainer.appendChild(checkboxItem);
+                });
+                
+                if (row.length > 0) {
+                    const rowToggle = document.createElement('div');
+                    rowToggle.className = 'row-toggle';
+                    
+                    const masterCheckbox = document.createElement('input');
+                    masterCheckbox.type = 'checkbox';
+                    masterCheckbox.checked = row.every((_, indexInRow) => {
+                        const globalIndex = rowIndex * 5 + indexInRow;
+                        return !removedIndices.has(globalIndex);
+                    });
+                    masterCheckbox.onchange = function() {
+                        row.forEach((_, indexInRow) => {
+                            const globalIndex = rowIndex * 5 + indexInRow;
+                            if (this.checked) {
+                                removedIndices.delete(globalIndex);
+                            } else {
+                                removedIndices.add(globalIndex);
+                            }
+                        });
+                        updateCheckboxUI();
+                        updateOutput();
+                    };
+                    
+                    const label = document.createElement('label');
+                    label.textContent = '全選';
+                    
+                    rowToggle.appendChild(masterCheckbox);
+                    rowToggle.appendChild(label);
+                    rowContainer.appendChild(rowToggle);
+                }
+                
+                container.appendChild(rowContainer);
+            });
+        }
+
+        function updateOutput() {
+            const outputDiv = document.getElementById('outputDiv');
+            outputDiv.innerHTML = '';
+            
+            currentParagraphs.forEach((para, index) => {
+                if (!removedIndices.has(index)) {
+                    const colorClass = colorClasses[index % colorClasses.length];
+                    const paraBlock = document.createElement('div');
+                    paraBlock.className = `para-block ${colorClass}`;
+                    paraBlock.textContent = para;
+                    outputDiv.appendChild(paraBlock);
+                }
+            });
+        }
+
+        function saveFilter() {
+            const url = document.getElementById('urlInput').value.trim();
+            const postFilters = document.getElementById('postFilters').value.trim();
+            const conditions = document.querySelectorAll('.condition-group');
+            let filterData = { url: encodeSpecialChars(url), postFilters: encodeSpecialChars(postFilters), conditions: [] };
+
+            conditions.forEach(group => {
+                const tagA = group.querySelector('.tag-a').value.trim();
+                const tagB = group.querySelector('.tag-b').value.trim();
+                let groupData = { tagA: encodeSpecialChars(tagA), tagB: encodeSpecialChars(tagB), notPairs: [] };
+                const notPairs = group.querySelectorAll('.not-pair');
+                notPairs.forEach(pair => {
+                    const tagNotStart = pair.querySelector('.tag-not-start').value.trim();
+                    const tagNotEnd = pair.querySelector('.tag-not-end').value.trim();
+                    if (tagNotStart || tagNotEnd) {
+                        groupData.notPairs.push({
+                            tagNotStart: encodeSpecialChars(tagNotStart),
+                            tagNotEnd: encodeSpecialChars(tagNotEnd)
+                        });
+                    }
+                });
+                if (tagA || tagB || groupData.notPairs.length > 0) {
+                    filterData.conditions.push(groupData);
+                }
+            });
+
+            if (filterData.conditions.length === 0 && !filterData.url && !filterData.postFilters) {
+                alert('沒有過濾條件、網址或後置過濾條件可儲存！');
+                return;
+            }
+
+            const blob = new Blob([JSON.stringify(filterData, null, 2)], { type: 'text/plain' });
+            const urlBlob = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = urlBlob;
+            a.download = 'filter_conditions.txt';
+            a.click();
+            URL.revokeObjectURL(urlBlob);
+        }
+
+        function loadFilter(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                alert('未選擇檔案！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const filterData = JSON.parse(e.target.result);
+                    if (typeof filterData !== 'object' || filterData === null) {
+                        throw new Error('檔案格式錯誤：應為有效的JSON物件');
+                    }
+                    if (!Array.isArray(filterData.conditions)) {
+                        throw new Error('檔案格式錯誤：缺少或無效的條件陣列（conditions）');
+                    }
+
+                    const container = document.getElementById('conditions-container');
+                    const urlInput = document.getElementById('urlInput');
+                    const postFiltersInput = document.getElementById('postFilters');
+                    container.innerHTML = '';
+
+                    urlInput.value = decodeSpecialChars(typeof filterData.url === 'string' ? filterData.url : '');
+                    postFiltersInput.value = decodeSpecialChars(typeof filterData.postFilters === 'string' ? filterData.postFilters : '');
+
+                    filterData.conditions.forEach((groupData, index) => {
+                        if (!groupData || typeof groupData !== 'object') {
+                            throw new Error(`無效的條件組格式（索引 ${index}）`);
+                        }
+
+                        const newGroup = document.createElement('div');
+                        newGroup.className = 'condition-group';
+
+                        const inputA = document.createElement('input');
+                        inputA.type = 'text';
+                        inputA.className = 'tag-a';
+                        inputA.placeholder = '開始標籤 (例如：<p>)';
+                        inputA.value = decodeSpecialChars(groupData.tagA || '');
+
+                        const inputB = document.createElement('input');
+                        inputB.type = 'text';
+                        inputB.className = 'tag-b';
+                        inputB.placeholder = '結束標籤 (例如：</p>)';
+                        inputB.value = decodeSpecialChars(groupData.tagB || '');
+
+                        const addButton = document.createElement('button');
+                        addButton.textContent = '+';
+                        addButton.onclick = addCondition;
+
+                        const notButton = document.createElement('button');
+                        notButton.textContent = 'NOT';
+                        notButton.onclick = function() { addNotCondition(this); };
+
+                        const removeButton = document.createElement('button');
+                        removeButton.className = 'remove-btn';
+                        removeButton.textContent = 'X';
+                        removeButton.onclick = function() { removeConditionGroup(this); };
+
+                        newGroup.appendChild(inputA);
+                        newGroup.appendChild(inputB);
+                        newGroup.appendChild(addButton);
+                        newGroup.appendChild(notButton);
+                        newGroup.appendChild(removeButton);
+
+                        if (Array.isArray(groupData.notPairs) && groupData.notPairs.length > 0) {
+                            const notInputs = document.createElement('div');
+                            notInputs.className = 'not-inputs';
+                            groupData.notPairs.forEach((pair, pairIndex) => {
+                                if (!pair || typeof pair !== 'object') {
+                                    throw new Error(`無效的NOT條件格式（條件組 ${index}，NOT條件 ${pairIndex}）`);
+                                }
+
+                                const newNotPair = document.createElement('div');
+                                newNotPair.className = 'not-pair';
+
+                                const inputNotStart = document.createElement('input');
+                                inputNotStart.type = 'text';
+                                inputNotStart.className = 'tag-not-start';
+                                inputNotStart.placeholder = '排除開始標籤或文字 (例如：<span> 或 \'s)';
+                                inputNotStart.value = decodeSpecialChars(pair.tagNotStart || '');
+
+                                const inputNotEnd = document.createElement('input');
+                                inputNotEnd.type = 'text';
+                                inputNotEnd.className = 'tag-not-end';
+                                inputNotEnd.placeholder = '排除結束標籤 (例如：</span>，可留空)';
+                                inputNotEnd.value = decodeSpecialChars(pair.tagNotEnd || '');
+
+                                const removeNotButton = document.createElement('button');
+                                removeNotButton.className = 'remove-btn';
+                                removeNotButton.textContent = 'X';
+                                removeNotButton.onclick = function() { removeNotPair(this); };
+
+                                newNotPair.appendChild(inputNotStart);
+                                newNotPair.appendChild(inputNotEnd);
+                                newNotPair.appendChild(removeNotButton);
+                                notInputs.appendChild(newNotPair);
+                            });
+                            if (notInputs.children.length > 0) {
+                                newGroup.appendChild(notInputs);
+                            }
+                        }
+
+                        container.appendChild(newGroup);
+                    });
+
+                    if (container.children.length === 0) {
+                        addCondition();
+                    }
+                } catch (err) {
+                    alert('載入過濾條件失敗：' + err.message);
+                }
+            };
+            reader.onerror = function() {
+                alert('讀取檔案失敗，請檢查檔案是否有效！');
+            };
+            reader.readAsText(file);
+        }
+
+        function saveAsTxt() {
+            let outputText = '';
+            
+            currentParagraphs.forEach((para, index) => {
+                if (!removedIndices.has(index)) {
+                    outputText += para + '\n\n';
+                }
+            });
+
+            if (!outputText.trim()) {
+                alert('沒有文字可儲存！');
+                return;
+            }
+
+            const blob = new Blob([outputText.trim()], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '提取文字.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
